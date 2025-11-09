@@ -1,10 +1,11 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 import requests
 from datetime import datetime, timedelta
 from weather_api import get_current_forecast, get_past_10_days, get_historical_data
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 
 def get_location_from_query(query):
@@ -36,7 +37,7 @@ def get_location_from_query(query):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_file('index.html')
 
 @app.route('/api/weather', methods=['GET'])
 def weather():
