@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Forecast - Professional Weather App</title>
+    <script>
+        // Auto-detect base path for GitHub Pages
+        (function() {
+            const path = window.location.pathname;
+            const basePath = path.split('/').slice(0, -1).join('/') || '';
+            const base = document.createElement('base');
+            base.href = basePath ? basePath + '/' : './';
+            document.head.insertBefore(base, document.head.firstChild);
+        })();
+    </script>
     <link rel="stylesheet" href="static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
