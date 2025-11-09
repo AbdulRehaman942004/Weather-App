@@ -1,5 +1,10 @@
-// API Base URL
+// API Base URL - Use direct API calls when opening file directly
 const API_BASE = '';
+const USE_DIRECT_API = true; // Set to true to use Open-Meteo API directly
+
+// Open-Meteo API endpoints
+const OPEN_METEO_API = 'https://api.open-meteo.com/v1';
+const GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1';
 
 // DOM Elements
 const locationInput = document.getElementById('locationInput');
@@ -166,8 +171,28 @@ function handleAutocomplete(e) {
     // Debounce autocomplete requests
     autocompleteTimeout = setTimeout(async () => {
         try {
-            const response = await fetch(`${API_BASE}/api/autocomplete?q=${encodeURIComponent(query)}`);
-            const data = await response.json();
+            let data;
+            if (USE_DIRECT_API) {
+                // Call geocoding API directly
+                const response = await fetch(`${GEOCODING_API}/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
+                const apiData = await response.json();
+                if (apiData.results) {
+                    data = {
+                        results: apiData.results.map(result => ({
+                            name: result.name,
+                            country: result.country || '',
+                            latitude: result.latitude,
+                            longitude: result.longitude,
+                            display: `${result.name}, ${result.country || ''}`
+                        }))
+                    };
+                } else {
+                    data = { results: [] };
+                }
+            } else {
+                const response = await fetch(`${API_BASE}/api/autocomplete?q=${encodeURIComponent(query)}`);
+                data = await response.json();
+            }
             
             if (data.results && data.results.length > 0) {
                 autocompleteResults = data.results;
@@ -254,45 +279,105 @@ function handlePastDaysToggle() {
     }
 }
 
+// Geocode location name to coordinates
+async function geocodeLocation(locationName) {
+    try {
+        const response = await fetch(`${GEOCODING_API}/search?name=${encodeURIComponent(locationName)}&count=1&language=en&format=json`);
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+            return {
+                latitude: data.results[0].latitude,
+                longitude: data.results[0].longitude,
+                name: data.results[0].name,
+                country: data.results[0].country || ''
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error geocoding:', error);
+        return null;
+    }
+}
+
 // Load weather data
 async function loadWeather(lat = null, lon = null, location = null, pastDays = 0) {
     showLoading();
     
     try {
-        let url = `${API_BASE}/api/weather?`;
+        let latitude, longitude, locationName, country;
         
+        // Geocode if location name provided
         if (location) {
-            url += `location=${encodeURIComponent(location)}`;
+            const locationData = await geocodeLocation(location);
+            if (!locationData) {
+                hideLoading();
+                showError('Location not found');
+                return;
+            }
+            latitude = locationData.latitude;
+            longitude = locationData.longitude;
+            locationName = locationData.name;
+            country = locationData.country;
         } else if (lat && lon) {
-            url += `latitude=${lat}&longitude=${lon}`;
-            currentLat = lat;
-            currentLon = lon;
+            latitude = lat;
+            longitude = lon;
+            locationName = `${latitude}, ${longitude}`;
+            country = '';
         } else {
-            // If no location provided, use default (empty query will use default in backend)
-            url += `latitude=31.525309&longitude=74.299928`;
+            // Default to Lahore
+            latitude = 31.525309;
+            longitude = 74.299928;
+            locationName = 'Lahore';
+            country = 'Pakistan';
         }
         
-        if (pastDays > 0) {
-            url += `&past_days=${pastDays}`;
+        currentLat = latitude;
+        currentLon = longitude;
+        
+        let weatherData;
+        
+        if (USE_DIRECT_API) {
+            // Call Open-Meteo API directly
+            let weatherUrl = `${OPEN_METEO_API}/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,wind_speed_10m,relative_humidity_2m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`;
+            
+            if (pastDays > 0) {
+                weatherUrl += `&past_days=${pastDays}`;
+            }
+            
+            const response = await fetch(weatherUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            weatherData = await response.json();
+            weatherData.location = { name: locationName, country: country, latitude: latitude, longitude: longitude };
+        } else {
+            // Use Flask backend
+            let url = `${API_BASE}/api/weather?`;
+            if (location) {
+                url += `location=${encodeURIComponent(location)}`;
+            } else {
+                url += `latitude=${latitude}&longitude=${longitude}`;
+            }
+            if (pastDays > 0) {
+                url += `&past_days=${pastDays}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+                hideLoading();
+                showError(errorData.error || `Failed to load weather data (${response.status})`);
+                return;
+            }
+            weatherData = await response.json();
         }
         
-        console.log('Fetching weather from:', url);
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
-            hideLoading();
-            showError(errorData.error || `Failed to load weather data (${response.status})`);
-            return;
-        }
-        
-        const data = await response.json();
-        displayWeather(data);
+        displayWeather(weatherData);
         hideError();
     } catch (error) {
         console.error('Error loading weather:', error);
         hideLoading();
-        showError(`Network error: ${error.message}. Please make sure the server is running.`);
+        showError(`Network error: ${error.message}`);
     }
 }
 
@@ -585,24 +670,35 @@ async function handleHistoricalData() {
     historicalForecast.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading historical data...</p></div>';
     
     try {
-        let url = `${API_BASE}/api/historical?latitude=${currentLat}&longitude=${currentLon}&start_date=${start}&end_date=${end}`;
+        let data;
         
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (response.ok) {
-            displayHistoricalData(data);
-            hideError();
+        if (USE_DIRECT_API) {
+            // Call historical API directly
+            const url = `https://archive-api.open-meteo.com/v1/era5?latitude=${currentLat}&longitude=${currentLon}&start_date=${start}&end_date=${end}&hourly=temperature_2m`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            data = await response.json();
         } else {
-            showError(data.error || 'Failed to load historical data');
-            historicalForecast.innerHTML = '<p class="placeholder-text">Failed to load historical data. Please try again.</p>';
+            // Use Flask backend
+            let url = `${API_BASE}/api/historical?latitude=${currentLat}&longitude=${currentLon}&start_date=${start}&end_date=${end}`;
+            const response = await fetch(url);
+            const responseData = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(responseData.error || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            data = responseData;
         }
+        
+        displayHistoricalData(data);
+        hideError();
     } catch (error) {
         console.error('Error loading historical data:', error);
-        showError(`Network error: ${error.message}. Please make sure the server is running.`);
+        showError(`Network error: ${error.message}`);
         historicalForecast.innerHTML = '<p class="placeholder-text">Network error. Please try again.</p>';
-        loadHistoricalBtn.disabled = false;
-        loadHistoricalBtn.textContent = 'Load Historical Data';
     } finally {
         loadHistoricalBtn.disabled = false;
         loadHistoricalBtn.textContent = 'Load Historical Data';
