@@ -383,8 +383,22 @@ async function loadWeather(lat = null, lon = null, location = null, pastDays = 0
 
 // Display weather data
 function displayWeather(data) {
-    // Store coordinates for historical data
+    // Update location name
     if (data.location) {
+        const locationNameEl = document.getElementById('locationName');
+        const locationCountryEl = document.getElementById('locationCountry');
+        
+        if (locationNameEl && data.location.name) {
+            locationNameEl.textContent = data.location.name;
+        }
+        
+        if (locationCountryEl && data.location.country) {
+            locationCountryEl.textContent = data.location.country;
+        } else if (locationCountryEl) {
+            locationCountryEl.textContent = '';
+        }
+        
+        // Store coordinates for historical data
         if (data.location.latitude && data.location.longitude) {
             currentLat = data.location.latitude;
             currentLon = data.location.longitude;

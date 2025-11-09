@@ -374,6 +374,28 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* Location Header */
+.location-header {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.location-name {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+}
+
+.location-country {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin: 0;
+}
+
 /* Current Weather Header */
 .current-weather-header {
     display: flex;
