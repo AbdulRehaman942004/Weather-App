@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast - Professional Weather App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">
+                <i class="ti ti-cloud"></i>
+                Weather Forecast
+            </h1>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <input type="text" id="locationInput" class="search-input" placeholder="Search for a city...">
+                    <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                </div>
+                <button id="searchBtn" class="search-btn">
+                    <i class="ti ti-search"></i>
+                    <span>Search</span>
+                </button>
+                <button id="currentLocationBtn" class="location-btn" title="Use current location">
+                    <i class="ti ti-map-pin"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Current Weather Card -->
+            <div class="weather-card current-weather" id="currentWeather">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading weather data...</p>
+                </div>
+                <div class="weather-content" id="weatherContent" style="display: none;">
+                    <div class="current-weather-header">
+                        <div class="weather-main-section">
+                            <div class="weather-icon-large" id="weatherIcon">
+                                <i class="ti ti-sun"></i>
+                            </div>
+                            <div class="temperature-display">
+                                <div class="temp-with-unit">
+                                    <span id="currentTemp">--</span>
+                                    <div class="unit-toggle">
+                                        <button class="unit-btn active" data-unit="c">°C</button>
+                                        <button class="unit-btn" data-unit="f">°F</button>
+                                    </div>
+                                </div>
+                                <div class="weather-details-list">
+                                    <div class="weather-detail-row">
+                                        <span class="detail-label-small">Precipitation:</span>
+                                        <span class="detail-value-small" id="precipitation">0%</span>
+                                    </div>
+                                    <div class="weather-detail-row">
+                                        <span class="detail-label-small">Humidity:</span>
+                                        <span class="detail-value-small" id="humidity">--%</span>
+                                    </div>
+                                    <div class="weather-detail-row">
+                                        <span class="detail-label-small">Wind:</span>
+                                        <span class="detail-value-small" id="windSpeed">-- km/h</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weather-info-section">
+                            <h2 class="weather-title">Weather</h2>
+                            <div class="time-condition">
+                                <p id="currentTime">--</p>
+                                <p id="weatherCondition">Clear</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hourly Forecast -->
+            <div class="weather-card hourly-forecast-card">
+                <h3 class="card-title">
+                    <i class="ti ti-clock"></i>
+                    Hourly Forecast
+                </h3>
+                <div class="hourly-forecast" id="hourlyForecast">
+                    <!-- Hourly items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Past Days Toggle -->
+            <div class="weather-card past-days-card">
+                <div class="toggle-section">
+                    <h3 class="card-title">
+                        <i class="ti ti-calendar"></i>
+                        10 Days Weather
+                    </h3>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pastDaysToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="past-days-forecast" id="pastDaysForecast">
+                    <!-- Past days items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Historical Data -->
+            <div class="weather-card historical-card">
+                <h3 class="card-title">
+                    <i class="ti ti-chart-line"></i>
+                    Historical Data
+                </h3>
+                <div class="historical-controls">
+                    <div class="date-input-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate" class="date-input">
+                    </div>
+                    <div class="date-input-group">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate" class="date-input">
+                    </div>
+                    <button id="loadHistoricalBtn" class="historical-btn">Load Historical Data</button>
+                </div>
+                <div class="historical-forecast" id="historicalForecast">
+                    <p class="placeholder-text">Select date range and click "Load Historical Data" to view historical weather information.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <span id="errorText"></span>
+            <button class="error-close" onclick="document.getElementById('errorMessage').style.display='none'">×</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
